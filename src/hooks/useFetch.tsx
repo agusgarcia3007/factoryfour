@@ -1,54 +1,46 @@
 import axios from "axios";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Response } from "../types";
 
-type useFetchState = {
-  data: Response[] | any[];
-  error: null | string;
-  loading: boolean;
-};
-
 const useFetch = (endpoints: string[]) => {
-  const [fetchedData, setFetchedData] = useState<useFetchState>({
-    data: [],
-    error: null,
-    loading: false,
-  });
+  const [data, setData] = useState<Response[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string[] | null[]>([]);
 
-  const fetchData = useCallback(async () => {
-    try {
-      const response = endpoints.map(async (endpoint) => {
-        const res = await axios.get(endpoint);
-        const data = await res.data;
-        return data;
-      });
-      if (data) {
-        setFetchedData({
-          data: [response],
-          error: null,
-          loading: false,
+  const effectRan = useRef(false);
+
+  const fetching = async () => {
+    setLoading(true);
+    endpoints.map(async (endpoint) => {
+      return await axios
+        .get(endpoint)
+        .then((res) => {
+          setData((prev) => [...prev, res.data]);
+        })
+        .catch((err) => {
+          setError((prev) => [...prev, err.message]);
         });
-      }
-    } catch (e: any) {
-      if (axios.isCancel(e)) {
-        console.log("fetching aborted");
-      } else {
-        console.log("error occured", e);
-        setFetchedData({
-          data: [],
-          error: e,
-          loading: false,
-        });
-      }
-      console.log(e);
-    }
-  }, [endpoints]);
+    });
+    setLoading(false);
+  };
 
   useEffect(() => {
-    fetchData();
-  }, [endpoints, fetchData]);
+    if (!effectRan.current) {
+      fetching();
+    }
+    return () => {
+      effectRan.current = true;
+    };
+  });
 
-  const { data, error, loading } = fetchedData;
+  useEffect(() => {
+    setTimeout(async () => {
+      setData([]);
+      setError([]);
+      window.location.reload();
+    }, 15000);
+  }, [data]);
+
   return { data, error, loading };
 };
 

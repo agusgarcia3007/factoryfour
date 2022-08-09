@@ -4,3 +4,8 @@ export interface Response {
   hostname?: string;
   time?: number;
 }
+
+export interface Error {
+  success?: boolean;
+  message?: string;
+}
