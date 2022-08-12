@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { endpoints } from "../consts/urls";
 import useFetch from "../hooks/useFetch";
 import Spinner from "./Spinner";
@@ -6,17 +6,17 @@ import Card from "./Card";
 import ErrorCard from "./ErrorCard";
 
 const List = () => {
-  const { data, error, loading } = useFetch(endpoints);
-
   const generateKey = () => {
     return Math.random().toString(36).slice(2);
   };
 
+  const { data, loading, error } = useFetch(endpoints);
+
   if (loading) return <Spinner />;
   return (
     <div className="card-container">
-      {data.length ? (
-        data.map((item) => {
+      {Object.values(data).length ? (
+        Object.values(data).map((item) => {
           return (
             <Card
               key={generateKey()}
@@ -30,8 +30,8 @@ const List = () => {
       ) : (
         <Spinner />
       )}
-      {error.length
-        ? error.map((err) => (
+      {Object.values(error).length
+        ? Object.values(error).map((err) => (
             <ErrorCard key={generateKey()} message={err as string} />
           ))
         : null}

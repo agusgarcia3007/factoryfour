@@ -1,46 +1,45 @@
 import axios from "axios";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Response } from "../types";
 
 const useFetch = (endpoints: string[]) => {
-  const [data, setData] = useState<Response[]>([]);
+  const [data, setData] = useState<Record<string, Response>>({});
   const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string[] | null[]>([]);
-
-  const effectRan = useRef(false);
+  const [error, setError] = useState<Record<string, string | null>>({});
 
   const fetching = async () => {
     setLoading(true);
-    endpoints.map(async (endpoint) => {
-      return await axios
-        .get(endpoint)
-        .then((res) => {
-          setData((prev) => [...prev, res.data]);
-        })
-        .catch((err) => {
-          setError((prev) => [...prev, err.message]);
-        });
-    });
+    await Promise.all(
+      endpoints.map(async (endpoint) => {
+        return await axios
+          .get(endpoint)
+          .then((res) => {
+            setData((prev) => ({ ...prev, [endpoint]: res.data }));
+          })
+          .catch((err) => {
+            setError((prev) => ({ ...prev, [endpoint]: err.message }));
+          });
+      })
+    );
     setLoading(false);
   };
 
-  useEffect(() => {
-    if (!effectRan.current) {
-      fetching();
-    }
-    return () => {
-      effectRan.current = true;
+  useEffect((): any => {
+    let timer: number | null = null;
+    const intervalFetch = async () => {
+      await fetching();
+      timer = window.setTimeout(async () => {
+        setError({});
+        setData({});
+        intervalFetch();
+      }, 15000);
     };
-  });
 
-  useEffect(() => {
-    setTimeout(async () => {
-      setData([]);
-      setError([]);
-      window.location.reload();
-    }, 15000);
-  }, [data]);
+    intervalFetch();
 
+    return () => timer !== null && clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return { data, error, loading };
 };
 
